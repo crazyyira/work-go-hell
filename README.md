@@ -1,20 +1,69 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 职场速效救心丸
 
-# Run and deploy your AI Studio app
+辞职还是搬砖？上天自有公论
 
-This contains everything you need to run your app locally.
+## 技术栈
 
-View your app in AI Studio: https://ai.studio/apps/4715195c-f3f9-48d3-b489-b03468a23d98
+- **Next.js 15** - React 框架
+- **React 19** - UI 库
+- **TypeScript** - 类型安全
+- **Tailwind CSS** - 样式框架
+- **Motion** - 动画库
+- **Canvas Confetti** - 彩纸效果
 
-## Run Locally
+## 开始使用
 
-**Prerequisites:**  Node.js
+### 安装依赖
 
+```bash
+npm install
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 运行开发服务器
+
+```bash
+npm run dev
+```
+
+在浏览器中打开 [http://localhost:3000](http://localhost:3000) 查看应用。
+
+### 构建生产版本
+
+```bash
+npm run build
+npm start
+```
+
+## 项目结构
+
+```
+work-go-hell/
+├── app/                    # Next.js App Router
+│   ├── layout.tsx         # 根布局
+│   ├── page.tsx           # 主页面
+│   └── globals.css        # 全局样式
+├── components/            # React 组件
+│   ├── ClockOutCountdown.tsx
+│   ├── DivinationSection.tsx
+│   ├── InputSection.tsx
+│   ├── ResultSection.tsx
+│   └── RetroButton.tsx
+├── lib/                   # 工具函数和常量
+│   ├── constants.ts
+│   └── utils.ts
+├── next.config.ts         # Next.js 配置
+├── tailwind.config.ts     # Tailwind 配置
+└── package.json
+```
+
+## 功能特性
+
+- 📝 吐槽输入和历史记录
+- 🔥 粉碎/焚烧烦恼动画
+- 🎲 赛博掷杯茭占卜
+- 🎉 结果展示和下载
+- ⏰ 下班倒计时
+
+## License
+
+Apache-2.0
