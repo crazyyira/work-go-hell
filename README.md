@@ -10,8 +10,17 @@
 - **Tailwind CSS** - 样式框架
 - **Motion** - 动画库
 - **Canvas Confetti** - 彩纸效果
+- **OpenAI API** - AI 占卜师
 
 ## 开始使用
+
+### 环境配置
+
+在项目根目录创建 `.env` 文件：
+
+```bash
+TUZIAI_API_KEY=your_api_key_here
+```
 
 ### 安装依赖
 
@@ -39,6 +48,8 @@ npm start
 ```
 work-go-hell/
 ├── app/                    # Next.js App Router
+│   ├── api/               # API Routes
+│   │   └── divination/    # AI 占卜 API
 │   ├── layout.tsx         # 根布局
 │   ├── page.tsx           # 主页面
 │   └── globals.css        # 全局样式
@@ -59,10 +70,33 @@ work-go-hell/
 ## 功能特性
 
 - 📝 吐槽输入和历史记录
-- 🔥 粉碎/焚烧烦恼动画
-- 🎲 赛博掷杯茭占卜
-- 🎉 结果展示和下载
+- 🔥 粉碎/焚烧烦恼动画（带刀扎和烧焦效果）
+- 🎲 赛博掷杯茭占卜（三次掷茭）
+- 🤖 AI 智能解读（基于 GPT-4o-mini）
+- 🎉 个性化结果卡片生成
+- 📥 结果下载功能
 - ⏰ 下班倒计时
+- 🚦 API 频率限制（每分钟最多 2 次）
+
+## AI 占卜规则
+
+### 掷茭结果：
+- **圣杯**（一正一反）：大吉，肯定
+- **笑杯**（两面皆反）：中吉，犹豫
+- **阴杯**（两面皆正）：下吉，否定
+
+### 最终判断：
+- 两次圣杯 → 吉（建议辞职）
+- 两次阴杯 → 凶（建议留下）
+- 三次结果都一样 → 暂缓决定（建议摸鱼）
+- 其他情况 → 看情况（建议摸鱼）
+
+## API 说明
+
+使用兔子 API（OpenAI 兼容接口）：
+- 端点：`https://api.tu-zi.com/v1/chat/completions`
+- 模型：`gpt-4o-mini`
+- 文档：https://tuzi-api.apifox.cn/343647063e0
 
 ## License
 

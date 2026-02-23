@@ -5,13 +5,15 @@ import { motion } from 'motion/react';
 import { Download, RefreshCw, Flame, AlertTriangle } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
-import { RESULTS, Complaint } from '@/lib/constants';
+import { RESULTS, Complaint, DivinationResult } from '@/lib/constants';
 import { RetroButton } from './RetroButton';
 
 interface ResultSectionProps {
   finalResult: keyof typeof RESULTS;
   currentZhaXin: string;
   complaints: Complaint[];
+  aiCardData: any;
+  divinationHistory: DivinationResult[];
   continueComplaining: () => void;
   reset: () => void;
 }
@@ -20,6 +22,8 @@ export const ResultSection = ({
   finalResult,
   currentZhaXin,
   complaints,
+  aiCardData,
+  divinationHistory,
   continueComplaining,
   reset,
 }: ResultSectionProps) => {
@@ -38,6 +42,14 @@ export const ResultSection = ({
     }
   };
 
+  // 使用 AI 数据或降级到默认数据
+  const cardTitle = aiCardData?.cardTitle || RESULTS[finalResult].title;
+  const cardSubtitle = aiCardData?.cardSubtitle || RESULTS[finalResult].subtitle;
+  const stamp = aiCardData?.stamp || RESULTS[finalResult].stamp;
+  const interpretation = aiCardData?.interpretation || currentZhaXin;
+  const divinationText = aiCardData?.divinationText || RESULTS[finalResult].divinationText;
+  const cardColor = RESULTS[finalResult].color;
+
   return (
     <motion.div 
       key="result"
@@ -49,15 +61,15 @@ export const ResultSection = ({
         ref={cardRef}
         className={cn(
           "retro-border-double w-full max-w-md p-8 flex flex-col gap-6 relative overflow-hidden bg-retro-paper",
-          RESULTS[finalResult].color
+          cardColor
         )}
       >
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
         
         <div className="border-4 border-current p-6 flex flex-col items-center text-center">
-          <h3 className="text-6xl font-serif-heavy mb-2 tracking-tighter">{RESULTS[finalResult].title}</h3>
+          <h3 className="text-6xl font-serif-heavy mb-2 tracking-tighter">{cardTitle}</h3>
           <div className="w-full h-1.5 bg-current mb-6" />
-          <p className="text-3xl font-bold mb-6 italic">&quot; {RESULTS[finalResult].subtitle} &quot;</p>
+          <p className="text-3xl font-bold mb-6 italic">&quot; {cardSubtitle} &quot;</p>
           
           <div className="sticky-note p-6 mb-6 w-full text-left relative">
             <p className="text-xs uppercase opacity-60 mb-2 tracking-widest">您的吐槽：</p>
@@ -69,14 +81,41 @@ export const ResultSection = ({
             </div>
           </div>
 
+          {/* 显示三次掷茭结果 */}
+          {divinationHistory.length > 0 && (
+            <div className="w-full mb-6 p-4 bg-white/50 rounded border-2 border-current/30">
+              <p className="text-sm opacity-60 mb-3 font-serif-heavy">掷茭记录：</p>
+              <div className="flex flex-col gap-3">
+                {divinationHistory.slice(0, 3).map((result, index) => {
+                  const resultName = result === 'SHENG' ? '圣杯' : result === 'XIAO' ? '笑杯' : '阴杯';
+                  const aiText = aiCardData?.throwResults?.[index]?.text;
+                  
+                  return (
+                    <div key={index} className="flex items-start gap-2 text-left">
+                      <div className="flex-shrink-0 w-16">
+                        <p className="text-xs opacity-60">第{index + 1}次</p>
+                        <p className="text-base font-serif-heavy text-retro-red">{resultName}</p>
+                      </div>
+                      {aiText && (
+                        <div className="flex-1 bg-white/70 px-3 py-2 rounded border border-current/20">
+                          <p className="text-sm leading-relaxed">{aiText}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <p className="text-2xl leading-relaxed font-retro mb-6 px-4">
-            {currentZhaXin}
+            {interpretation}
           </p>
           
           <div className="w-full h-px bg-current/30 mb-6" />
           
           <p className="text-base opacity-90 italic font-serif-heavy">
-            {RESULTS[finalResult].divinationText}
+            {divinationText}
           </p>
         </div>
 
@@ -90,7 +129,7 @@ export const ResultSection = ({
             <div className="absolute inset-0 border-4 border-retro-red rounded-full opacity-40 animate-pulse" />
             <div className="w-24 h-24 border-4 border-retro-red rounded-full flex items-center justify-center -rotate-12 animate-stamp">
               <span className="text-retro-red font-serif-heavy text-2xl text-center leading-none px-2">
-                {RESULTS[finalResult].stamp}
+                {stamp}
               </span>
             </div>
           </div>

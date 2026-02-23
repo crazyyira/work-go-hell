@@ -21,9 +21,12 @@ export default function Home() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [isConsulting, setIsConsulting] = useState(false);
   const [lastDivination, setLastDivination] = useState<DivinationResult | null>(null);
+  const [divinationHistory, setDivinationHistory] = useState<DivinationResult[]>([]);
   const [finalResult, setFinalResult] = useState<keyof typeof RESULTS | null>(null);
   const [currentZhaXin, setCurrentZhaXin] = useState("");
   const [isBurning, setIsBurning] = useState(false);
+  const [aiCardData, setAiCardData] = useState<any>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
 
   const addComplaint = () => {
     if (!inputText.trim()) return;
@@ -100,43 +103,232 @@ export default function Home() {
       setLastDivination(res);
       const nextCount = divinationCount + 1;
       setDivinationCount(nextCount);
+      setDivinationHistory(prev => [...prev, res]);
       setIsSpinning(false);
 
+      // 每次掷茭后都调用 AI 生成该次的解读
+      fetchSingleThrowAI(res, nextCount - 1);
+
       if (nextCount === 3) {
-        setIsConsulting(true);
+        // 第三次掷茭后，等待 3 秒让用户看到第三次结果，然后才开始生成最终结果
         setTimeout(() => {
-          const outcomes: (keyof typeof RESULTS)[] = ['QUIT', 'STAY', 'MAYBE'];
-          setFinalResult(outcomes[Math.floor(Math.random() * outcomes.length)]);
-          setCurrentZhaXin(ZHA_XIN_REPLIES[Math.floor(Math.random() * ZHA_XIN_REPLIES.length)]);
-          setStep('RESULT');
-          setIsConsulting(false);
-          confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#cc3333', '#f1c40f', '#1a1a1a']
-          });
-        }, 1500);
+          setLastDivination(null); // 清除当前显示的结果
+          setIsConsulting(true);
+          generateFinalResult([...divinationHistory, res]);
+        }, 3000); // 等待 3 秒
       }
     }, 800);
+  };
+
+  // 为单次掷茭调用 AI
+  const fetchSingleThrowAI = async (result: DivinationResult, index: number) => {
+    console.log(`Fetching AI for throw ${index + 1}:`, result);
+    
+    try {
+      const response = await fetch('/api/divination/single', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          result,
+          index,
+          complaint: complaints[0]?.text || '心中所念之事',
+        }),
+      });
+
+      const data = await response.json();
+      console.log(`Received AI data for throw ${index + 1}:`, data);
+      
+      // 更新该次掷茭的解读
+      setAiCardData(prev => {
+        const newData = { ...prev };
+        if (!newData.throwResults) {
+          newData.throwResults = [];
+        }
+        newData.throwResults[index] = {
+          result,
+          text: data.text
+        };
+        return newData;
+      });
+    } catch (error) {
+      console.error(`AI error for throw ${index + 1}:`, error);
+      // 使用降级文案
+      const fallbackText = getFallbackText(result);
+      setAiCardData(prev => {
+        const newData = { ...prev };
+        if (!newData.throwResults) {
+          newData.throwResults = [];
+        }
+        newData.throwResults[index] = {
+          result,
+          text: fallbackText
+        };
+        return newData;
+      });
+    }
+  };
+
+  // 获取降级文案
+  const getFallbackText = (result: DivinationResult): string => {
+    const throwTexts = {
+      SHENG: [
+        '神仙点头了，这是要飞升的节奏！',
+        '圣杯出现，老板听了会沉默，HR听了会流泪。',
+        '一正一反，天意让你反了这个班！',
+        '圣杯加持，辞职信已经在路上了。'
+      ],
+      YIN: [
+        '两面朝天，神仙说：醒醒，房贷还没还完呢。',
+        '阴杯警告，钱包提醒你要现实一点。',
+        '神仙翻了个白眼：就你这存款还想辞职？',
+        '阴杯示警，建议先攒够三年生活费再说。'
+      ],
+      XIAO: [
+        '神仙笑了，可能在笑你还没穷够。',
+        '笑杯出现，连神仙都觉得你在纠结什么。',
+        '两面朝地，神仙说：要不先摸鱼试试？',
+        '笑杯调侃，人生何必太认真，先摸鱼再说。'
+      ]
+    };
+    const texts = throwTexts[result];
+    return texts[Math.floor(Math.random() * texts.length)];
+  };
+
+  // 生成最终结果
+  const generateFinalResult = async (results: DivinationResult[]) => {
+    setIsLoadingAI(true);
+    
+    try {
+      const response = await fetch('/api/divination/final', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          complaint: complaints[0]?.text || '心中所念之事',
+          divinationResults: results,
+        }),
+      });
+
+      const data = await response.json();
+      console.log('Received final result:', data);
+      
+      setAiCardData(prev => ({
+        ...prev,
+        cardTitle: data.cardTitle,
+        cardSubtitle: data.cardSubtitle,
+        stamp: data.stamp,
+        interpretation: data.interpretation,
+        divinationText: data.divinationText,
+        finalResult: data.finalResult,
+      }));
+      setFinalResult(data.finalResult);
+      setCurrentZhaXin(data.interpretation);
+      setIsLoadingAI(false);
+      setIsConsulting(false);
+      
+      setTimeout(() => {
+        setStep('RESULT');
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#cc3333', '#f1c40f', '#1a1a1a']
+        });
+      }, 1500);
+    } catch (error) {
+      console.error('Final result error:', error);
+      useFallbackFinalResult(results);
+    }
+  };
+
+  const useFallbackFinalResult = (results: DivinationResult[]) => {
+    const shengCount = results.filter(r => r === 'SHENG').length;
+    const yinCount = results.filter(r => r === 'YIN').length;
+
+    let finalResultType: keyof typeof RESULTS = 'MAYBE';
+    let cardTitle = '';
+    let cardSubtitle = '';
+    let stamp = '';
+    let interpretation = '';
+    let divinationText = '';
+
+    if (shengCount >= 2) {
+      finalResultType = 'QUIT';
+      cardTitle = '辞职申请书';
+      cardSubtitle = '老子不干了！';
+      stamp = '准予离职';
+      interpretation = '两次圣杯！神仙都在催你快跑，不辞职就做善事吧！';
+      divinationText = '圣杯加持，天意如此，是时候追求自由了。';
+    } else if (yinCount >= 2) {
+      finalResultType = 'STAY';
+      cardTitle = '再忍五天暴击卡';
+      cardSubtitle = '为了五斗米折腰';
+      stamp = '继续搬砖';
+      interpretation = '两次阴杯，神仙劝你冷静。工资卡余额提醒你：梦想很贵。';
+      divinationText = '阴杯示警，留得青山在，不怕没柴烧。';
+    } else {
+      finalResultType = 'MAYBE';
+      cardTitle = '赛博摸鱼许可证';
+      cardSubtitle = '精神离职，肉体打卡';
+      stamp = '暂缓决定';
+      interpretation = '结果混乱，说明时机未到。建议继续观望，顺便摸摸鱼。';
+      divinationText = '天意未明，不如静观其变，该来的总会来。';
+    }
+
+    setAiCardData(prev => ({
+      ...prev,
+      cardTitle,
+      cardSubtitle,
+      stamp,
+      interpretation,
+      divinationText,
+      finalResult: finalResultType,
+    }));
+    setFinalResult(finalResultType);
+    setCurrentZhaXin(interpretation);
+    setIsLoadingAI(false);
+    setIsConsulting(false);
+
+    setTimeout(() => {
+      setStep('RESULT');
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#cc3333', '#f1c40f', '#1a1a1a']
+      });
+    }, 1500);
   };
 
   const reset = () => {
     setStep('INPUT');
     setDivinationCount(0);
     setLastDivination(null);
+    setDivinationHistory([]);
     setFinalResult(null);
     setComplaints([]);
     setIsShredded(false);
+    setAiCardData(null);
   };
 
   const continueComplaining = () => {
     setStep('INPUT');
     setDivinationCount(0);
     setLastDivination(null);
+    setDivinationHistory([]);
     setFinalResult(null);
     setComplaints([]);
     setIsShredded(false);
+    setAiCardData(null);
+  };
+
+  const resetToInput = () => {
+    setComplaints([]);
+    setIsShredded(false);
+    setInputText("");
   };
 
   return (
@@ -168,6 +360,7 @@ export default function Home() {
               handleShred={handleShred}
               handleBurn={handleBurn}
               startDivination={startDivination}
+              resetToInput={resetToInput}
             />
           )}
 
@@ -176,7 +369,10 @@ export default function Home() {
               divinationCount={divinationCount}
               isSpinning={isSpinning}
               isConsulting={isConsulting}
+              isLoadingAI={isLoadingAI}
               lastDivination={lastDivination}
+              divinationHistory={divinationHistory}
+              aiCardData={aiCardData}
               throwBei={throwBei}
             />
           )}
@@ -186,6 +382,8 @@ export default function Home() {
               finalResult={finalResult}
               currentZhaXin={currentZhaXin}
               complaints={complaints}
+              aiCardData={aiCardData}
+              divinationHistory={divinationHistory}
               continueComplaining={continueComplaining}
               reset={reset}
             />

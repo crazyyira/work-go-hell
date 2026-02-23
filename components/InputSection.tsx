@@ -19,6 +19,7 @@ interface InputSectionProps {
   handleShred: () => void;
   handleBurn: () => void;
   startDivination: () => void;
+  resetToInput: () => void;
 }
 
 export const InputSection = ({
@@ -33,6 +34,7 @@ export const InputSection = ({
   handleShred,
   handleBurn,
   startDivination,
+  resetToInput,
 }: InputSectionProps) => {
   return (
     <motion.div 
@@ -45,7 +47,7 @@ export const InputSection = ({
       {/* Input Section */}
       <div className="retro-border bg-white p-6 flex flex-col gap-4">
         <label className="text-2xl font-serif-heavy flex items-center gap-2">
-          <Flame className="text-retro-red" /> 吐槽今日奇葩行为
+          <Flame className="text-retro-red" /> 吐槽吧 上班君
         </label>
         <div className="flex gap-2">
           <input 
@@ -91,6 +93,7 @@ export const InputSection = ({
         handleShred={handleShred}
         handleBurn={handleBurn}
         startDivination={startDivination}
+        resetToInput={resetToInput}
       />
     </motion.div>
   );
@@ -281,6 +284,7 @@ const ActionButtons = ({
   handleShred,
   handleBurn,
   startDivination,
+  resetToInput,
 }: {
   complaints: Complaint[];
   isShredded: boolean;
@@ -289,6 +293,7 @@ const ActionButtons = ({
   handleShred: () => void;
   handleBurn: () => void;
   startDivination: () => void;
+  resetToInput: () => void;
 }) => (
   <div className="flex flex-wrap justify-center gap-6 mt-8">
     {complaints.length > 0 && !isShredded && !isShredding && !isBurning && (
@@ -308,15 +313,29 @@ const ActionButtons = ({
       </>
     )}
     
-    {(!isShredding && !isBurning) && (
+    {isShredded && (
+      <>
+        <RetroButton 
+          onClick={startDivination}
+          className="text-3xl px-12 py-5 bg-retro-yellow text-retro-ink animate-pulse"
+        >
+          请示天意
+        </RetroButton>
+        <RetroButton 
+          onClick={resetToInput}
+          className="text-2xl px-10 py-4 bg-white text-retro-ink border-retro-ink"
+        >
+          继续吐槽
+        </RetroButton>
+      </>
+    )}
+    
+    {(!isShredding && !isBurning && !isShredded && complaints.length === 0) && (
       <RetroButton 
         onClick={startDivination}
-        className={cn(
-          "text-4xl px-16 py-6 transition-all",
-          isShredded ? "bg-retro-yellow text-retro-ink animate-bounce" : "bg-retro-paper text-retro-ink opacity-50 hover:opacity-100"
-        )}
+        className="text-3xl px-16 py-6 bg-retro-paper text-retro-ink opacity-70 hover:opacity-100"
       >
-        {isShredded ? "请神指示" : "直接请示天意"}
+        直接请示天意
       </RetroButton>
     )}
   </div>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DivinationResult } from '@/lib/constants';
 import { RetroButton } from './RetroButton';
@@ -10,7 +11,10 @@ interface DivinationSectionProps {
   divinationCount: number;
   isSpinning: boolean;
   isConsulting: boolean;
+  isLoadingAI: boolean;
   lastDivination: DivinationResult | null;
+  divinationHistory: DivinationResult[];
+  aiCardData: any;
   throwBei: () => void;
 }
 
@@ -18,9 +22,28 @@ export const DivinationSection = ({
   divinationCount,
   isSpinning,
   isConsulting,
+  isLoadingAI,
   lastDivination,
+  divinationHistory,
+  aiCardData,
   throwBei,
 }: DivinationSectionProps) => {
+  const getDivinationName = (result: DivinationResult) => {
+    if (result === 'SHENG') return '圣杯';
+    if (result === 'XIAO') return '笑杯';
+    return '阴杯';
+  };
+
+  const getDivinationText = (result: DivinationResult, index: number) => {
+    // 优先使用 AI 生成的文字
+    if (aiCardData?.throwResults?.[index]?.text) {
+      return aiCardData.throwResults[index].text;
+    }
+    
+    // 如果还没有 AI 数据，显示"神灵显化中..."
+    return '神灵显化中...';
+  };
+
   return (
     <motion.div 
       key="divination"
@@ -33,6 +56,35 @@ export const DivinationSection = ({
         <h2 className="text-4xl font-serif-heavy mb-2">神圣仪式：赛博掷杯茭</h2>
         <p className="text-xl opacity-70">连续点击 3 次，诚心祈求上天指引 ({divinationCount}/3)</p>
       </div>
+
+      {/* 历史记录 */}
+      {divinationHistory.length > 0 && (
+        <div className="flex gap-4 mb-4">
+          {divinationHistory.map((result, index) => (
+            <motion.div 
+              key={index} 
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="retro-border bg-white px-4 py-3 min-w-[120px]"
+            >
+              <p className="text-sm opacity-60">第 {index + 1} 次</p>
+              <p className="text-lg font-serif-heavy text-retro-red mb-1">
+                {getDivinationName(result)}
+              </p>
+              {aiCardData?.throwResults?.[index]?.text && (
+                <motion.p 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-xs leading-tight opacity-80 mt-2"
+                >
+                  {aiCardData.throwResults[index].text}
+                </motion.p>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       <div className="relative h-64 w-64 flex items-center justify-center">
         <motion.div 
@@ -54,26 +106,33 @@ export const DivinationSection = ({
           )} />
         </motion.div>
 
-        {isConsulting && (
+        {(isConsulting || isLoadingAI) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 flex items-center justify-center bg-retro-paper/80 z-10"
+            className="absolute top-[120%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center bg-retro-paper/95 z-20 gap-4 p-8 retro-border shadow-2xl w-[400px]"
           >
-            <p className="text-3xl font-serif-heavy animate-pulse">正在请示天意...</p>
+            <Loader2 className="w-16 h-16 animate-spin text-retro-red" />
+            <motion.p 
+              className="text-4xl font-serif-heavy text-center"
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              神灵显化中
+            </motion.p>
+            <p className="text-xl opacity-70 text-center">请耐心等待</p>
           </motion.div>
         )}
 
-        {lastDivination && !isSpinning && !isConsulting && (
+        {lastDivination && !isSpinning && !isConsulting && !isLoadingAI && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="absolute top-[75%] text-2xl font-serif-heavy text-retro-red text-center w-[320px] z-50 bg-retro-paper/95 p-4 retro-border shadow-2xl"
           >
             <div className="text-sm italic opacity-60 mb-1 font-retro">—— 啪嗒! ——</div>
-            {lastDivination === 'SHENG' && "圣杯：天意如此，神仙都劝你快跑。"}
-            {lastDivination === 'XIAO' && "笑杯：神仙笑而不语，可能觉得你还没穷够。"}
-            {lastDivination === 'YIN' && "阴杯：神仙生气了，工资卡余额提醒你冷静。"}
+            <p className="text-xl mb-2">{getDivinationName(lastDivination)}</p>
+            <p className="text-base opacity-80">{getDivinationText(lastDivination, divinationCount - 1)}</p>
           </motion.div>
         )}
       </div>
@@ -81,10 +140,10 @@ export const DivinationSection = ({
       <div className="mt-12">
         <RetroButton 
           onClick={throwBei}
-          disabled={isSpinning}
+          disabled={isSpinning || isConsulting || isLoadingAI}
           className="text-3xl px-16 py-6 bg-retro-ink text-white hover:bg-retro-red"
         >
-          {isSpinning ? "冥想中..." : "掷！"}
+          {isSpinning ? "冥想中..." : isConsulting || isLoadingAI ? "占卜中..." : "掷！"}
         </RetroButton>
       </div>
     </motion.div>
