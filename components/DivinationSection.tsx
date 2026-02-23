@@ -57,32 +57,38 @@ export const DivinationSection = ({
         <p className="text-xl opacity-70">连续点击 3 次，诚心祈求上天指引 ({divinationCount}/3)</p>
       </div>
 
-      {/* 历史记录 */}
+      {/* 历史记录 - 显示所有已完成的掷茭 */}
       {divinationHistory.length > 0 && (
         <div className="flex gap-4 mb-4">
-          {divinationHistory.map((result, index) => (
-            <motion.div 
-              key={index} 
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="retro-border bg-white px-4 py-3 min-w-[120px]"
-            >
-              <p className="text-sm opacity-60">第 {index + 1} 次</p>
-              <p className="text-lg font-serif-heavy text-retro-red mb-1">
-                {getDivinationName(result)}
-              </p>
-              {aiCardData?.throwResults?.[index]?.text && (
-                <motion.p 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-xs leading-tight opacity-80 mt-2"
-                >
-                  {aiCardData.throwResults[index].text}
-                </motion.p>
-              )}
-            </motion.div>
-          ))}
+          {divinationHistory.map((result, index) => {
+            // 如果是当前正在显示的结果（最后一次且还在显示中），则不在历史记录中显示
+            const isCurrentShowing = index === divinationCount - 1 && lastDivination !== null && !isConsulting && !isLoadingAI;
+            if (isCurrentShowing) return null;
+            
+            return (
+              <motion.div 
+                key={index} 
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="retro-border bg-white px-4 py-3 min-w-[120px]"
+              >
+                <p className="text-sm opacity-60">第 {index + 1} 次</p>
+                <p className="text-lg font-serif-heavy text-retro-red mb-1">
+                  {getDivinationName(result)}
+                </p>
+                {aiCardData?.throwResults?.[index]?.text && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-xs leading-tight opacity-80 mt-2"
+                  >
+                    {aiCardData.throwResults[index].text}
+                  </motion.p>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
@@ -106,28 +112,11 @@ export const DivinationSection = ({
           )} />
         </motion.div>
 
-        {(isConsulting || isLoadingAI) && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute top-[120%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center bg-retro-paper/95 z-20 gap-4 p-8 retro-border shadow-2xl w-[400px]"
-          >
-            <Loader2 className="w-16 h-16 animate-spin text-retro-red" />
-            <motion.p 
-              className="text-4xl font-serif-heavy text-center"
-              animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              神灵显化中
-            </motion.p>
-            <p className="text-xl opacity-70 text-center">请耐心等待</p>
-          </motion.div>
-        )}
-
         {lastDivination && !isSpinning && !isConsulting && !isLoadingAI && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             className="absolute top-[75%] text-2xl font-serif-heavy text-retro-red text-center w-[320px] z-50 bg-retro-paper/95 p-4 retro-border shadow-2xl"
           >
             <div className="text-sm italic opacity-60 mb-1 font-retro">—— 啪嗒! ——</div>
@@ -136,6 +125,25 @@ export const DivinationSection = ({
           </motion.div>
         )}
       </div>
+
+      {/* 大师解签中 - 显示在掷茭图片和按钮之间 */}
+      {(isConsulting || isLoadingAI) && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center bg-retro-paper/95 gap-4 p-8 retro-border shadow-2xl w-[400px]"
+        >
+          <Loader2 className="w-16 h-16 animate-spin text-retro-red" />
+          <motion.p 
+            className="text-4xl font-serif-heavy text-center"
+            animate={{ opacity: [1, 0.5, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            大师解签中
+          </motion.p>
+          <p className="text-xl opacity-70 text-center">请耐心等待</p>
+        </motion.div>
+      )}
 
       <div className="mt-12">
         <RetroButton 

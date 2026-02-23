@@ -13,7 +13,7 @@ export const RESULTS = {
     title: "辞职申请书",
     subtitle: "老子不干了！",
     stamp: "准予离职",
-    color: "bg-retro-red text-white",
+    color: "bg-retro-yellow text-retro-ink",
     divinationText: "圣杯：天意如此，神仙都劝你快跑。"
   },
   STAY: {

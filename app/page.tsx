@@ -110,12 +110,14 @@ export default function Home() {
       fetchSingleThrowAI(res, nextCount - 1);
 
       if (nextCount === 3) {
-        // 第三次掷茭后，等待 3 秒让用户看到第三次结果，然后才开始生成最终结果
+        // 第三次掷茭后，等待 8 秒让用户充分阅读第三次结果，然后才开始生成最终结果
         setTimeout(() => {
-          setLastDivination(null); // 清除当前显示的结果
+          // 清除第三次结果显示，然后显示"大师解签中"
+          setLastDivination(null);
           setIsConsulting(true);
+          setIsLoadingAI(true);
           generateFinalResult([...divinationHistory, res]);
-        }, 3000); // 等待 3 秒
+        }, 8000); // 等待 8 秒
       }
     }, 800);
   };
@@ -141,7 +143,7 @@ export default function Home() {
       console.log(`Received AI data for throw ${index + 1}:`, data);
       
       // 更新该次掷茭的解读
-      setAiCardData(prev => {
+      setAiCardData((prev: any) => {
         const newData = { ...prev };
         if (!newData.throwResults) {
           newData.throwResults = [];
@@ -156,7 +158,7 @@ export default function Home() {
       console.error(`AI error for throw ${index + 1}:`, error);
       // 使用降级文案
       const fallbackText = getFallbackText(result);
-      setAiCardData(prev => {
+      setAiCardData((prev: any) => {
         const newData = { ...prev };
         if (!newData.throwResults) {
           newData.throwResults = [];
@@ -198,8 +200,6 @@ export default function Home() {
 
   // 生成最终结果
   const generateFinalResult = async (results: DivinationResult[]) => {
-    setIsLoadingAI(true);
-    
     try {
       const response = await fetch('/api/divination/final', {
         method: 'POST',
@@ -215,7 +215,7 @@ export default function Home() {
       const data = await response.json();
       console.log('Received final result:', data);
       
-      setAiCardData(prev => ({
+      setAiCardData((prev: any) => ({
         ...prev,
         cardTitle: data.cardTitle,
         cardSubtitle: data.cardSubtitle,
@@ -226,18 +226,17 @@ export default function Home() {
       }));
       setFinalResult(data.finalResult);
       setCurrentZhaXin(data.interpretation);
+      
+      // 直接跳转，不要重置状态
+      setStep('RESULT');
       setIsLoadingAI(false);
       setIsConsulting(false);
-      
-      setTimeout(() => {
-        setStep('RESULT');
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#cc3333', '#f1c40f', '#1a1a1a']
-        });
-      }, 1500);
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#cc3333', '#f1c40f', '#1a1a1a']
+      });
     } catch (error) {
       console.error('Final result error:', error);
       useFallbackFinalResult(results);
@@ -278,7 +277,7 @@ export default function Home() {
       divinationText = '天意未明，不如静观其变，该来的总会来。';
     }
 
-    setAiCardData(prev => ({
+    setAiCardData((prev: any) => ({
       ...prev,
       cardTitle,
       cardSubtitle,
@@ -289,18 +288,17 @@ export default function Home() {
     }));
     setFinalResult(finalResultType);
     setCurrentZhaXin(interpretation);
+    
+    // 直接跳转
+    setStep('RESULT');
     setIsLoadingAI(false);
     setIsConsulting(false);
-
-    setTimeout(() => {
-      setStep('RESULT');
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#cc3333', '#f1c40f', '#1a1a1a']
-      });
-    }, 1500);
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#cc3333', '#f1c40f', '#1a1a1a']
+    });
   };
 
   const reset = () => {
